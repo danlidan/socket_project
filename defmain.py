@@ -13,5 +13,5 @@ if __name__ == '__main__':
     ui.setupUi(MainWindow)
     ui.pushButton.clicked.connect(lambda:push(ui))
     MainWindow.show()
-    
+
 sys.exit(app.exec_())
