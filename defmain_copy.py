@@ -18,16 +18,10 @@ def push2(sock):
     if len(data) > 0:
         try:
             sock.sendall(data.encode('utf-8'))
+            recv_data = sock.recv(BUFSIZE).decode('utf-8')
+            ui.textEdit.setText(recv_data)
         except Exception:
             print('error')
-
-def recv(sock):
-    try:
-        while True:
-            recv_data = sock.recv(BUFSIZE).decode('utf-8')
-            print(recv_data)
-    except Exception:
-        thread.exit_thread()
 
 app = QApplication(sys.argv)
 MainWindow = QMainWindow()
@@ -37,7 +31,6 @@ ui.pushButton.clicked.connect(lambda:push())
 sock = socket.socket()
 sock.connect(ADDR)
 ui.pushButton_2.clicked.connect(lambda :push2(sock))
-thread.start_new_thread(recv, (sock,))
 MainWindow.show()
 app.exec_()
 sock.close()
