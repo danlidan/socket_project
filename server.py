@@ -11,11 +11,12 @@ def req_handler(params, connection):
     switcher = {
         'req_login': req_login,
         'req_sign': req_sign,
+        'req_refresh_list': req_refresh_list
     }
     func = switcher.get(params[0], lambda:"nothing")
     return func(params, connection)
 
-
+#以下为各种变量的定义
 #socket_list: connection, address的列表
 #conn 为本地mysql的连接
 socket_list = []
@@ -30,7 +31,8 @@ def req_login(params, conn):
     cursor.execute(sql)
     result = cursor.fetchall()
     if(len(result) > 0):
-        data = '||'.join(['ack_login', 'ok'])
+        nick = result[0][2]
+        data = '||'.join(['ack_login', 'ok', id, nick])
         conn.send(data.encode('utf-8'))
     else:
         data = '||'.join(['ack_login', 'not'])
@@ -52,6 +54,10 @@ def req_sign(params, conn):
         sqlconn.commit()
         data = '||'.join(['ack_sign', 'ok'])
         conn.send(data.encode('utf-8'))
+
+#发送的格式：id, nickname, is_online
+def req_refresh_list(params, conn):
+    print('req_refresh_list')
 ##----------------------------------------------------------------------------------------------
 def child_connection(index, sock, connection, address):
     socket_list.append((connection, address))

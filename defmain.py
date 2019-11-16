@@ -12,6 +12,8 @@ PORT = 8998
 ADDR =(HOST,PORT)
 BUFSIZE = 1024
 LOGGED_IN = False
+ID = ''
+NICK = ''
 
 #以下为各种客户端操作的协议
 #登录操作
@@ -38,6 +40,11 @@ def sign_in():
         data = '||'.join(['req_sign', id, password, nick])
         sock.sendall(data.encode('utf-8'))
 
+#刷新聊天列表
+def refresh_list():
+    data = '||'.join(['req_refresh_list'])
+    sock.sendall(data.encode('utf-8'))
+
 #接受服务器数据的线程类
 class My_Recv_Thread(QThread):
     _signal = pyqtSignal(str)
@@ -55,6 +62,10 @@ class My_Recv_Thread(QThread):
 def ack_login(params):
     ret = params[1]
     if(ret == 'ok'):
+        global ID
+        ID = params[2]
+        global NICK
+        NICK = params[3]
         global LOGGED_IN
         LOGGED_IN = True
         app1.closeAllWindows()
@@ -110,7 +121,10 @@ app = QApplication(sys.argv)
 MainWindow = QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
+MainWindow.setWindowTitle('欢迎使用QQ乞丐版')
 MainWindow.show()
+ui.label_welcome.setText('欢迎！%s'%NICK)
+refresh_list()
 app.exec_()
 sock.close()
 sys.exit()
