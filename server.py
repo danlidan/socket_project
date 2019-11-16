@@ -11,7 +11,8 @@ def req_handler(params, connection):
     switcher = {
         'req_login': req_login,
         'req_sign': req_sign,
-        'req_refresh_list': req_refresh_list
+        'req_refresh_list': req_refresh_list,
+        'req_change_nick': req_change_nick,
     }
     func = switcher.get(params[0], lambda:"nothing")
     return func(params, connection)
@@ -81,6 +82,20 @@ def req_refresh_list(params, conn):
         ret_list.append(data)
     ret_data = '||'.join(ret_list)
     ret_data = '||'.join(['ack_refresh_list', ret_data])
+    conn.send(ret_data.encode('utf-8'))
+
+#修改昵称
+def req_change_nick(params, conn):
+    id = params[1]
+    new_nick = params[2]
+    id_conn[id] = (conn, new_nick)
+    conn_id[conn] = (id, new_nick)
+    user_list[id] = new_nick
+    sql = "update users set nick_name = '%s' where id = '%s';"%(new_nick, id)
+    cursor.execute(sql)
+    sqlconn.commit()
+
+    ret_data = '||'.join(['ack_change_nick', new_nick])
     conn.send(ret_data.encode('utf-8'))
 
 ##----------------------------------------------------------------------------------------------

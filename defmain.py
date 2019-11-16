@@ -49,6 +49,15 @@ def refresh_list():
     data = '||'.join(['req_refresh_list'])
     sock.sendall(data.encode('utf-8'))
 
+#修改昵称操作
+def change_nick():
+    new_name = ui.lineEdit_nick.text()
+    if(len(new_name) == 0 or len(new_name) > 30 or new_name.find('|') != -1 or new_name.find('#') != -1 or new_name.find(' ') != -1):
+        ui.label_change.setText('昵称违法！')
+    else:
+        data = '||'.join(['req_change_nick', ID, new_name])
+        sock.sendall(data.encode('utf-8'))
+
 #接受服务器数据的线程类
 class My_Recv_Thread(QThread):
     _signal = pyqtSignal(str)
@@ -97,6 +106,14 @@ def ack_refresh_list(params):
         else:
             ui.listWidget.addItem("%s  %s  离线"%(id, nick))
 
+def ack_change_nick(params):
+    new_nick = params[1]
+    ui.label_change.setText('修改成功！')
+    ui.label_welcome.setText('欢迎！%s'%new_nick)
+    global NICK
+    NICK = new_nick
+    refresh_list()
+
 #处理服务器发来数据的协议
 def handle_recv(s):
     params = s.split('||')
@@ -104,6 +121,7 @@ def handle_recv(s):
         'ack_login': ack_login,
         'ack_sign': ack_sign,
         'ack_refresh_list': ack_refresh_list,
+        'ack_change_nick': ack_change_nick,
     }
     func = switcher.get(params[0], lambda: "nothing")
     return func(params)
@@ -140,6 +158,7 @@ app = QApplication(sys.argv)
 MainWindow = QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
+ui.pushButton_nick.clicked.connect(lambda :change_nick())
 MainWindow.setWindowTitle('欢迎使用QQ乞丐版')
 MainWindow.show()
 ui.label_welcome.setText('欢迎！%s'%NICK)

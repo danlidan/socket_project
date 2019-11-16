@@ -39,7 +39,7 @@
      <rect>
       <x>10</x>
       <y>40</y>
-      <width>561</width>
+      <width>471</width>
       <height>16</height>
      </rect>
     </property>
@@ -101,18 +101,18 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>72</width>
-      <height>15</height>
+      <width>371</width>
+      <height>16</height>
      </rect>
     </property>
     <property name="text">
      <string>欢迎！</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="pushButton_nick">
     <property name="geometry">
      <rect>
-      <x>410</x>
+      <x>400</x>
       <y>10</y>
       <width>71</width>
       <height>31</height>
@@ -126,10 +126,23 @@
     <property name="geometry">
      <rect>
       <x>490</x>
-      <y>20</y>
+      <y>10</y>
       <width>91</width>
       <height>21</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_change">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>40</y>
+      <width>101</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>17307130009</string>
     </property>
    </widget>
   </widget>
