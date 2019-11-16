@@ -34,6 +34,10 @@ def sign_in():
     password2 = ui_login.lineEdit_4.text()
     if(len(id) == 0 or len(id) > 30 or len(password) == 0 or len(password) > 30 or len(nick) == 0 or len(nick) > 30 or len(password2) == 0 or len(password2) > 30):
         ui_login.label_state.setText('部分内容长度过长或未填！')
+    elif(id.find('|') != -1 or id.find('#') != -1 or id.find(' ') != -1):
+        ui_login.label_state.setText("用户名包含非法字符!('|' or '#' or ' ')")
+    elif(nick.find('|') != -1 or nick.find('#') != -1 or nick.find(' ') != -1):
+        ui_login.label_state.setText("昵称包含非法字符！('|' or '#' or ' ')")
     elif(password2 != password):
         ui_login.label_state.setText('两次输入密码不一致！')
     else:
@@ -79,12 +83,27 @@ def ack_sign(params):
     else:
         ui_login.label_state.setText('注册失败！该用户名已被注册')
 
+def ack_refresh_list(params):
+    ui.listWidget.clear()
+    ui.listWidget.addItem("聊天大厅")
+    for s in params[1:]:
+        users = s.split('##')
+        #users: id, nick, is_online
+        id = users[0]
+        nick = users[1]
+        is_online = users[2]
+        if(is_online == 'yes'):
+            ui.listWidget.addItem("%s  %s  在线"%(id, nick))
+        else:
+            ui.listWidget.addItem("%s  %s  离线"%(id, nick))
+
 #处理服务器发来数据的协议
 def handle_recv(s):
     params = s.split('||')
     switcher = {
         'ack_login': ack_login,
         'ack_sign': ack_sign,
+        'ack_refresh_list': ack_refresh_list,
     }
     func = switcher.get(params[0], lambda: "nothing")
     return func(params)
