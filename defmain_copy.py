@@ -1,6 +1,7 @@
+from PyQt5.QtGui import QColor
 from ui import  Ui_MainWindow
 from login_ui import  Ui_Form
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox, QLineEdit
 from PyQt5.QtCore import *
 import socket,sys
 import time
@@ -19,6 +20,7 @@ CUR_CHAT = ('聊天大厅', '0')
 FIRST_LOG = True    #是否刚登录
 CHAT_BUFF = {}  #聊天记录的缓存区 id : ((text, time, sender_id, sender_nick),()...),id当前聊天的id，‘0’为聊天大厅
 LAST_SEND_TIME = time.time()
+LAST_RECORD_TIME = time.time()
 ID_LEN = 6
 MAX_PASS_LEN = 15
 MIN_PASS_LEN = 6
@@ -105,8 +107,29 @@ def send_clicked():
     ui.textEdit_input.clear()
 
 def record_clicked():
+    ui.pushButton_record.setText('显示更多记录')
+    cur_time = time.time()
+    global  LAST_RECORD_TIME
+    if(cur_time - LAST_RECORD_TIME < 3):
+        ui.pushButton_record.setText('点的太快')
+        return
+    LAST_RECORD_TIME = cur_time
     id_other = CUR_CHAT[1]
     acquire_more_chatrecord(id_other)
+
+#接收到消息后未点开时该列变色
+def set_color(id):
+    if(id == '0'):
+        ui.listWidget.item(0).setBackground(QColor('pink'))
+    else:
+        rows = ui.listWidget.count()
+        for i in range(1, rows):
+            text = ui.listWidget.item(i).text()
+            params = text.split('  ')
+            if params[1] == id:
+                ui.listWidget.item(i).setBackground(QColor('pink'))
+                return
+
 
 #请求聊天记录
 def acquire_chatrecord(id_other):
@@ -127,6 +150,7 @@ def refresh_chat(id_other):
 #切换聊天
 def switch_chat():
     item = ui.listWidget.currentItem()
+    item.setBackground(QColor('white'))
     params = item.text().split('  ')
     nick = params[0]
     if(nick == '聊天大厅'):
@@ -230,16 +254,22 @@ def ack_send_text(params):
         if(CUR_CHAT[1] == recver_id):
             ui.textEdit_chat.append("%s(%s) %s:"%(sender_nick, sender_id, time))
             ui.textEdit_chat.append("   %s\n"%text)
+        else:
+            set_color('0')
     elif(sender_id == ID):
         CHAT_BUFF[recver_id].append([text, time, sender_id, sender_nick])
         if (CUR_CHAT[1] == recver_id):
             ui.textEdit_chat.append("%s(%s) %s:" % (sender_nick, sender_id, time))
             ui.textEdit_chat.append("   %s\n" % text)
+        else:
+            set_color(recver_id)
     else:
         CHAT_BUFF[sender_id].append([text, time, sender_id, sender_nick])
         if (CUR_CHAT[1] == sender_id):
             ui.textEdit_chat.append("%s(%s) %s:" % (sender_nick, sender_id, time))
             ui.textEdit_chat.append("   %s\n" % text)
+        else:
+            set_color(sender_id)
 
 #获取聊天记录
 #records: sender, sendernick, time, text
@@ -297,6 +327,8 @@ ui_login = Ui_Form()
 ui_login.setupUi(MainWindow_login)
 ui_login.login_button.clicked.connect(lambda :login_in())
 ui_login.sign_button.clicked.connect(lambda :sign_in())
+ui_login.lineEdit_2.setEchoMode(QLineEdit.Password)
+ui_login.lineEdit_4.setEchoMode(QLineEdit.Password)
 MainWindow_login.setWindowTitle('登录')
 MainWindow_login.show()
 app1.exec_()

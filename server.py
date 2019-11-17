@@ -269,4 +269,3 @@ if __name__ == "__main__":
         if index > 100:
             break
     sock.close()
-
