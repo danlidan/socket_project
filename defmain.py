@@ -19,13 +19,17 @@ CUR_CHAT = ('聊天大厅', '0')
 FIRST_LOG = True    #是否刚登录
 CHAT_BUFF = {}  #聊天记录的缓存区 id : ((text, time, sender_id, sender_nick),()...),id当前聊天的id，‘0’为聊天大厅
 LAST_SEND_TIME = time.time()
+ID_LEN = 6
+MAX_PASS_LEN = 15
+MIN_PASS_LEN = 6
+MAX_NICK_LEN = 10
 
 #以下为各种客户端操作的协议
 #登录操作
 def login_in():
     id = ui_login.lineEdit.text()
     password = ui_login.lineEdit_2.text()
-    if(len(id) == 0 or len(id) > 30 or len(password) == 0 or len(password) > 30):
+    if(len(id) != ID_LEN  or len(password) < MIN_PASS_LEN or len(password) > MAX_PASS_LEN or id.isdigit() == False):
         ui_login.label_state.setText('请输入合法的用户名和密码！')
     else:
         data = '||'.join(['req_login', id, password])
@@ -37,10 +41,10 @@ def sign_in():
     password = ui_login.lineEdit_2.text()
     nick = ui_login.lineEdit_3.text()
     password2 = ui_login.lineEdit_4.text()
-    if(len(id) == 0 or len(id) > 30 or len(password) == 0 or len(password) > 30 or len(nick) == 0 or len(nick) > 30 or len(password2) == 0 or len(password2) > 30):
-        ui_login.label_state.setText('部分内容长度过长或未填！')
-    elif(id.find('|') != -1 or id.find('#') != -1 or id.find(' ') != -1):
-        ui_login.label_state.setText("用户名包含非法字符!('|' or '#' or ' ')")
+    if(len(id) != ID_LEN or len(password) < MIN_PASS_LEN or len(password) > MAX_PASS_LEN or len(nick) == 0 or len(nick) > MAX_NICK_LEN):
+        ui_login.label_state.setText('部分内容长度错误！')
+    elif(id.isdigit() == False):
+        ui_login.label_state.setText("用户名必须是%s位数字！"%ID_LEN)
     elif(nick.find('|') != -1 or nick.find('#') != -1 or nick.find(' ') != -1):
         ui_login.label_state.setText("昵称包含非法字符！('|' or '#' or ' ')")
     elif(id == '0' or nick == '聊天大厅'):
@@ -59,7 +63,7 @@ def refresh_list():
 #修改昵称操作
 def change_nick():
     new_name = ui.lineEdit_nick.text()
-    if(len(new_name) == 0 or len(new_name) > 30 or new_name.find('|') != -1 or new_name.find('#') != -1 or new_name.find(' ') != -1):
+    if(len(new_name) == 0 or len(new_name) > MAX_NICK_LEN or new_name.find('|') != -1 or new_name.find('#') != -1 or new_name.find(' ') != -1):
         ui.label_change.setText('昵称违法！')
     elif(new_name == '聊天大厅'):
         ui.label_change.setText('昵称不能为聊天大厅！')
