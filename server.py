@@ -15,6 +15,7 @@ def req_handler(params, connection):
         'req_change_nick': req_change_nick,
         'req_send_text': req_send_text,
         'req_acquire_chatrecord': req_acquire_chatrecord,
+        'req_acquire_more_chatrecord': req_acquire_more_chatrecord,
     }
     func = switcher.get(params[0], lambda:"nothing")
     return func(params, connection)
@@ -154,7 +155,8 @@ def req_acquire_chatrecord(params, conn):
         ret_data = '||'.join(['ack_acquire_chatrecord', recver_id, tmp2])
         conn.send(ret_data.encode('utf-8'))
     else:
-        sql = "select * from chat_records where (sender_id = '%s' and recver_id = '%s') or (sender_id = '%s' and recver_id = '%s')"%(sender_id, recver_id, recver_id, sender_id)
+        sql = "select * from chat_records where (sender_id = '%s' and recver_id = '%s') or (sender_id = '%s' and recver_id = '%s') order by send_time"\
+              %(sender_id, recver_id, recver_id, sender_id)
         cursor.execute(sql)
         data = cursor.fetchall()
         tmp = []
@@ -165,6 +167,52 @@ def req_acquire_chatrecord(params, conn):
                 tmp.append('##'.join([sid, user_list[sid], t_str, text]))
         else:
             for i in range(l - 20, l):
+                sid = data[i][0]
+                t = data[i][2]
+                text = data[i][3]
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+        tmp2 = '||'.join(tmp)
+        ret_data = '||'.join(['ack_acquire_chatrecord', recver_id, tmp2])
+        conn.send(ret_data.encode('utf-8'))
+
+def req_acquire_more_chatrecord(params, conn):
+    sender_id = params[1]
+    recver_id = params[2]
+    if (recver_id == '0'):  # 请求聊天大厅的记录
+        sql = "select * from chat_global;"
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        tmp = []
+        l = len(data)
+        if l < 80:
+            for sid, t, text in data:
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+        else:
+            for i in range(l - 80, l):
+                sid = data[i][0]
+                t = data[i][1]
+                text = data[i][2]
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+
+        tmp2 = '||'.join(tmp)
+        ret_data = '||'.join(['ack_acquire_chatrecord', recver_id, tmp2])
+        conn.send(ret_data.encode('utf-8'))
+    else:
+        sql = "select * from chat_records where (sender_id = '%s' and recver_id = '%s') or (sender_id = '%s' and recver_id = '%s') order by send_time"\
+              %(sender_id, recver_id, recver_id, sender_id)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        tmp = []
+        l = len(data)
+        if l < 80:
+            for sid, rid, t, text in data:
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+        else:
+            for i in range(l - 80, l):
                 sid = data[i][0]
                 t = data[i][2]
                 text = data[i][3]

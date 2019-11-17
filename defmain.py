@@ -19,6 +19,7 @@ CUR_CHAT = ('聊天大厅', '0')
 FIRST_LOG = True    #是否刚登录
 CHAT_BUFF = {}  #聊天记录的缓存区 id : ((text, time, sender_id, sender_nick),()...),id当前聊天的id，‘0’为聊天大厅
 LAST_SEND_TIME = time.time()
+LAST_RECORD_TIME = time.time()
 ID_LEN = 6
 MAX_PASS_LEN = 15
 MIN_PASS_LEN = 6
@@ -71,6 +72,10 @@ def change_nick():
         data = '||'.join(['req_change_nick', ID, new_name])
         sock.sendall(data.encode('utf-8'))
 
+def acquire_more_chatrecord(id_other):
+    data = '||'.join(['req_acquire_more_chatrecord', ID, id_other])
+    sock.sendall(data.encode('utf-8'))
+
 #获取聊天记录
 def acquire_chatrecord(id_other):
     data = '||'.join(['req_acquire_chatrecord', ID, id_other])
@@ -100,6 +105,17 @@ def send_clicked():
     send_text(id_other, text)
     ui.textEdit_input.clear()
 
+def record_clicked():
+    ui.pushButton_record.setText('显示更多记录')
+    cur_time = time.time()
+    global  LAST_RECORD_TIME
+    if(cur_time - LAST_RECORD_TIME < 3):
+        ui.pushButton_record.setText('点的太快')
+        return
+    LAST_RECORD_TIME = cur_time
+    id_other = CUR_CHAT[1]
+    acquire_more_chatrecord(id_other)
+
 #请求聊天记录
 def acquire_chatrecord(id_other):
     data = "||".join(['req_acquire_chatrecord', ID, id_other])
@@ -127,7 +143,7 @@ def switch_chat():
         id = params[1]
     global CUR_CHAT
     CUR_CHAT = (nick, id)
-    ui.label_curchat.setText('当前聊天：%s'%nick)
+    ui.label_curchat.setText('当前聊天：%s（%s）'%(nick, id))
     refresh_chat(id)
 
 
@@ -199,7 +215,7 @@ def ack_refresh_list(params):
 def ack_change_nick(params):
     new_nick = params[1]
     ui.label_change.setText('修改成功！')
-    ui.label_welcome.setText('欢迎！%s'%new_nick)
+    ui.label_welcome.setText('欢迎！%s（%s）'%(new_nick, ID))
     global NICK
     NICK = new_nick
     refresh_list()
@@ -304,12 +320,13 @@ ui.setupUi(MainWindow)
 ui.pushButton_nick.clicked.connect(lambda :change_nick())
 ui.listWidget.itemDoubleClicked.connect(lambda :switch_chat())
 ui.pushButton_send.clicked.connect(lambda :send_clicked())
+ui.pushButton_record.clicked.connect(lambda :record_clicked())
 MainWindow.setWindowTitle('欢迎使用QQ乞丐版')
 MainWindow.show()
 
 #主界面ui初始化的工作
-ui.label_welcome.setText('欢迎！%s'%NICK)
-ui.label_curchat.setText('当前聊天：聊天大厅')
+ui.label_welcome.setText('欢迎！%s（%s）'%(NICK, ID))
+ui.label_curchat.setText('当前聊天：聊天大厅（0）')
 refresh_list()
 refresh_chat('0')
 
