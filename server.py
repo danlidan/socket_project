@@ -13,6 +13,8 @@ def req_handler(params, connection):
         'req_sign': req_sign,
         'req_refresh_list': req_refresh_list,
         'req_change_nick': req_change_nick,
+        'req_send_text': req_send_text,
+        'req_acquire_chatrecord': req_acquire_chatrecord,
     }
     func = switcher.get(params[0], lambda:"nothing")
     return func(params, connection)
@@ -40,6 +42,10 @@ def init_user_list():
 def req_login(params, conn):
     id = params[1]
     password = params[2]
+    if id in id_conn:
+        data = '||'.join(['ack_login', 'not'])
+        conn.send(data.encode('utf-8'))
+        return
     sql = "select * from users where id = '%s' and pass = '%s';"%(id, password)
     cursor.execute(sql)
     result = cursor.fetchall()
@@ -97,6 +103,77 @@ def req_change_nick(params, conn):
 
     ret_data = '||'.join(['ack_change_nick', new_nick])
     conn.send(ret_data.encode('utf-8'))
+
+def req_send_text(params, conn):
+    sender_id = params[1]
+    recver_id = params[2]
+    text = params[3]
+    dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    retdata = '||'.join(['ack_send_text', sender_id, user_list[sender_id], recver_id, text, dt])
+
+    #私聊
+    if recver_id != '0':
+        sql = "insert into chat_records values('%s', '%s', '%s', '%s');"%(sender_id, recver_id, dt, text)
+        cursor.execute(sql)
+        sqlconn.commit()
+        if sender_id in id_conn:
+            id_conn[sender_id][0].send(retdata.encode('utf-8'))
+        if recver_id in id_conn:
+            id_conn[recver_id][0].send(retdata.encode('utf-8'))
+    else:   #聊天大厅
+        sql = "insert into chat_global values('%s', '%s', '%s');"%(sender_id, dt, text)
+        cursor.execute(sql)
+        sqlconn.commit()
+        for conn, values in conn_id.items():
+            conn.send(retdata.encode('utf-8'))
+
+#params: sender, recver
+#retdata : recver_id + (senderid, sendernick, time, text),(),.....
+def req_acquire_chatrecord(params, conn):
+    sender_id = params[1]
+    recver_id = params[2]
+    if(recver_id == '0'): #请求聊天大厅的记录
+        sql = "select * from chat_global;"
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        tmp = []
+        l = len(data)
+        if l < 20:
+            for sid, t, text in data:
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+        else:
+            for i in range(l - 20, l):
+                sid = data[i][0]
+                t = data[i][1]
+                text = data[i][2]
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+
+        tmp2 = '||'.join(tmp)
+        ret_data = '||'.join(['ack_acquire_chatrecord', recver_id, tmp2])
+        conn.send(ret_data.encode('utf-8'))
+    else:
+        sql = "select * from chat_records where (sender_id = '%s' and recver_id = '%s') or (sender_id = '%s' and recver_id = '%s')"%(sender_id, recver_id, recver_id, sender_id)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        tmp = []
+        l = len(data)
+        if l < 20:
+            for sid, rid, t, text in data:
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+        else:
+            for i in range(l - 20, l):
+                sid = data[i][0]
+                t = data[i][2]
+                text = data[i][3]
+                t_str = t.strftime("%Y-%m-%d %H:%M:%S")
+                tmp.append('##'.join([sid, user_list[sid], t_str, text]))
+        tmp2 = '||'.join(tmp)
+        ret_data = '||'.join(['ack_acquire_chatrecord', recver_id, tmp2])
+        conn.send(ret_data.encode('utf-8'))
+
 
 ##----------------------------------------------------------------------------------------------
 def child_connection(index, sock, connection, address):

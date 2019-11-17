@@ -18,6 +18,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.textEdit_chat = QtWidgets.QTextEdit(self.centralwidget)
         self.textEdit_chat.setGeometry(QtCore.QRect(10, 60, 571, 361))
+        self.textEdit_chat.setReadOnly(True)
         self.textEdit_chat.setObjectName("textEdit_chat")
         self.textEdit_input = QtWidgets.QTextEdit(self.centralwidget)
         self.textEdit_input.setGeometry(QtCore.QRect(10, 430, 571, 161))
