@@ -16,8 +16,15 @@ def req_handler(params, connection):
         'req_send_text': req_send_text,
         'req_acquire_chatrecord': req_acquire_chatrecord,
         'req_acquire_more_chatrecord': req_acquire_more_chatrecord,
+        'req_send_pyq': req_send_pyq,
+        'req_comment_pyq': req_comment_pyq,
+        'req_acquire_pyq': req_acquire_pyq,
     }
-    func = switcher.get(params[0], lambda:"nothing")
+    try:
+        func = switcher.get(params[0], lambda:"nothing")
+    except Exception:
+        print('proto error!')
+        return
     return func(params, connection)
 
 #以下为各种变量的定义
@@ -222,6 +229,74 @@ def req_acquire_more_chatrecord(params, conn):
         ret_data = '||'.join(['ack_acquire_chatrecord', recver_id, tmp2])
         conn.send(ret_data.encode('utf-8'))
 
+#发朋友圈
+def req_send_pyq(params, conn):
+    sender_id = params[1]
+    send_time = params[2]
+    context = params[3]
+    sql = "insert into pyq_main values('%s', '%s', '%s', 0);"%(sender_id, send_time, context)
+    try:
+        cursor.execute(sql)
+    except Exception:
+        print('send pyq failed!')
+        return
+    sqlconn.commit()
+
+#评论朋友圈
+def req_comment_pyq(params, conn):
+    sender_id = params[1]
+    send_time = params[2]
+    commenter_id = params[3]
+    context = params[4]
+    sql = "insert into pyq_comment values('%s', '%s', '%s', '%s')"%(sender_id, send_time, commenter_id, context)
+    try:
+        cursor.execute(sql)
+    except Exception:
+        print('send pyq comment failed!')
+        return
+    sqlconn.commit()
+
+#获取/刷新朋友圈
+def req_acquire_pyq(params, conn):
+    acker_id = params[1]
+    if acker_id == '0':
+        sql = "select * from pyq_main order by send_time;"
+    else:
+        sql = "select * from pyq_main where sender_id = '%s' order by send_time"%acker_id
+
+    try:
+        cursor.execute(sql)
+    except Exception:
+        print('db error!')
+        return
+    result= cursor.fetchall()
+    pyqs = []
+    i = 0
+    for id, dt, content, counter in result:
+        if i >= 25:
+            break
+        send_time = dt.strftime("%Y-%m-%d %H:%M:%S")
+        nick = user_list[id]
+
+        #搜索这条朋友圈的评论
+        comments = []
+        sql = "select * from pyq_comment where sender_id = '%s' and send_time = '%s';"%(id, send_time)
+        cursor.execute(sql)
+        result_2 = cursor.fetchall()
+        for id_cmt, dt_cmt, commenter_id, comment in result_2:
+            nick_cmt = user_list[commenter_id]
+            comments.append(nick_cmt + '&&' + comment)
+        comments_str = '**'.join(comments)
+
+        #data = nick ^^ id ^^ send_time ^^ counter ^^ content ^^ nick1 && cmt1 ** nick2 && cmt2
+        one_pyq = [nick, id, send_time, str(counter), content, comments_str]
+        pyqs.append('^^'.join(one_pyq))
+        i = i + 1
+
+    #data_all =  data1 || data2 || ...
+    data = '||'.join(pyqs)
+    retdata = '||'.join(['ack_acquire_pyq', data])
+    conn.send(retdata.encode('utf-8'))
 
 ##----------------------------------------------------------------------------------------------
 def child_connection(index, sock, connection, address):
@@ -256,7 +331,7 @@ if __name__ == "__main__":
     init_user_list()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(('172.100.96.163', 8998))  # 配置soket，绑定IP地址和端口号
+    sock.bind(('10.222.201.44', 8998))  # 配置soket，绑定IP地址和端口号
     sock.listen(5)  # 设置最大允许连接数，各连接和server的通信遵循FIFO原则
 
     index = 0

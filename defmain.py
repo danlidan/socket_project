@@ -1,7 +1,8 @@
 from PyQt5.QtGui import QColor
 from ui import  Ui_MainWindow
 from login_ui import  Ui_Form
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox, QLineEdit, QDialog, QGroupBox, QPushButton, \
+    QVBoxLayout, QListWidgetItem
 from PyQt5.QtCore import *
 import socket,sys
 import time
@@ -9,7 +10,7 @@ if(sys.version[:1] == "3"):
     import _thread as thread
 
 #全局变量定义区
-HOST = '172.100.96.163'
+HOST = '10.222.201.44'
 PORT = 8998
 ADDR =(HOST,PORT)
 BUFSIZE = 8192
@@ -21,6 +22,7 @@ FIRST_LOG = True    #是否刚登录
 CHAT_BUFF = {}  #聊天记录的缓存区 id : ((text, time, sender_id, sender_nick),()...),id当前聊天的id，‘0’为聊天大厅
 LAST_SEND_TIME = time.time()
 LAST_RECORD_TIME = time.time()
+LAST_PYQ_SEND_TIME = time.time()
 ID_LEN = 6
 MAX_PASS_LEN = 15
 MIN_PASS_LEN = 6
@@ -37,6 +39,16 @@ def login_in():
         data = '||'.join(['req_login', id, password])
         sock.sendall(data.encode('utf-8'))
 
+#是否合法
+def is_legal_text(s):
+    if len(s) == 0:
+        return False
+    if s.find(' ') != -1 or s.find('&&') != -1 or s.find('**') != -1 or s.find('||') != -1 or s.find('^^') != -1:
+        return False
+    if s.find('#') != -1 or s.find('|') != -1:
+        return False
+    return True
+
 #注册操作
 def sign_in():
     id = ui_login.lineEdit.text()
@@ -47,7 +59,7 @@ def sign_in():
         ui_login.label_state.setText('部分内容长度错误！')
     elif(id.isdigit() == False):
         ui_login.label_state.setText("用户名必须是%s位数字！"%ID_LEN)
-    elif(nick.find('|') != -1 or nick.find('#') != -1 or nick.find(' ') != -1):
+    elif(not is_legal_text(nick)):
         ui_login.label_state.setText("昵称包含非法字符！('|' or '#' or ' ')")
     elif(id == '0' or nick == '聊天大厅'):
         ui_login.label_state.setText('用户名和昵称违法！')
@@ -65,7 +77,7 @@ def refresh_list():
 #修改昵称操作
 def change_nick():
     new_name = ui.lineEdit_nick.text()
-    if(len(new_name) == 0 or len(new_name) > MAX_NICK_LEN or new_name.find('|') != -1 or new_name.find('#') != -1 or new_name.find(' ') != -1):
+    if(not is_legal_text(new_name)):
         ui.label_change.setText('昵称违法！')
     elif(new_name == '聊天大厅'):
         ui.label_change.setText('昵称不能为聊天大厅！')
@@ -162,6 +174,90 @@ def switch_chat():
     ui.label_curchat.setText('当前聊天：%s（%s）'%(nick, id))
     refresh_chat(id)
 
+# comments = [[nick, context],[nick, context]...]
+def pyq_addpyq(nick, id, send_time, counter, context, comments):
+    newitem = QListWidgetItem()
+    text = "%s %s %s\n" \
+           "赞: %d\n" \
+           "\t%s\n"%(nick, id, send_time, counter, context)
+    if len(comments) > 0 and len(comments[0]) > 1:
+        for nick, context in comments:
+            text = text + "      %s : %s\n"%(nick, context)
+    newitem.setText(text)
+    ui.listWidget_pyq.insertItem(0, newitem)
+
+def pyq_good():
+    comments = [['liyifei', 'nihao'],['lierfei', 'niyehao']]
+    pyq_addpyq('lidan', '123456', '2019-11-26', 7, '你好', comments)
+
+#发送一条朋友圈
+def pyq_send():
+    ui.pushButton_sendpyq.setText('发送动态')
+    text = ui.textEdit_pyqinput.toPlainText()
+    ui.textEdit_pyqinput.clear()
+    if(len(text) == 0):
+        return
+    if(not is_legal_text(text)):
+        ui.pushButton_sendpyq.setText('内容违法')
+        return
+    global LAST_PYQ_SEND_TIME
+    cur_time = time.time()
+    if cur_time - LAST_PYQ_SEND_TIME < 3:
+        ui.pushButton_sendpyq.setText('发送过快')
+        return
+    LAST_PYQ_SEND_TIME = cur_time
+    cur_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(cur_time))
+    if CUR_CHAT[1] == '0' or CUR_CHAT[1] == ID:
+        pyq_addpyq(NICK, ID, cur_time_str, 0, text, [])
+    data = '||'.join(['req_send_pyq', ID, cur_time_str, text])
+    sock.sendall(data.encode('utf-8'))
+
+#发送一条评论
+def pyq_comment():
+    ui.pushButton_comment.setText('评论')
+    curitem = ui.listWidget_pyq.currentItem()
+    if ui.listWidget_pyq.count() == 0 or curitem == None:
+        ui.pushButton_comment.setText('评论失败')
+        return
+    text = ui.textEdit_pyqinput.toPlainText()
+    ui.textEdit_pyqinput.clear()
+    if (len(text) == 0):
+        return
+    if not is_legal_text(text):
+        ui.pushButton_comment.setText('内容违法')
+        return
+    global LAST_PYQ_SEND_TIME
+    cur_time = time.time()
+    if cur_time - LAST_PYQ_SEND_TIME < 3:
+        ui.pushButton_comment.setText('评论过快')
+        return
+    LAST_PYQ_SEND_TIME = cur_time
+
+    #获取该评论的信息
+    item_content = curitem.text()
+    params = item_content.split('\n')
+    params_sender = params[0].split(' ')
+    sender_id = params_sender[1]
+    send_time = params_sender[2] + ' ' + params_sender[3]
+
+    data = '||'.join(['req_comment_pyq', sender_id, send_time, ID, text])
+    sock.sendall(data.encode('utf-8'))
+    #更新该项
+    item_content = item_content + '      %s : %s\n'%(NICK, text)
+    curitem.setText(item_content)
+
+#刷新朋友圈
+def acquire_pyq():
+    item = ui.listWidget.currentItem()
+    params = item.text().split('  ')
+    nick = params[0]
+    if (nick == '聊天大厅'):
+        id = '0'
+    else:
+        id = params[1]
+
+    data = '||'.join(['req_acquire_pyq', id])
+    sock.sendall(data.encode('utf-8'))
 
 #接受服务器数据的线程类
 class My_Recv_Thread(QThread):
@@ -290,6 +386,24 @@ def ack_acquire_chatrecord(params):
     if CUR_CHAT[1] == recver_id:
         refresh_chat(recver_id)
 
+#刷新朋友圈界面
+def ack_acquire_pyq(params):
+    ui.listWidget_pyq.clear()
+    if params[1] == '':
+        return
+    for pyq_one in params[1:]:
+        params_1 = pyq_one.split('^^')
+        nick = params_1[0]
+        sender_id = params_1[1]
+        send_time = params_1[2]
+        counter = int(params_1[3])
+        content = params_1[4]
+        comments = []
+        comments_str = params_1[5].split('**')
+        for s in comments_str:
+            comments.append(s.split('&&'))
+        pyq_addpyq(nick, sender_id, send_time, counter, content, comments)
+
 #处理服务器发来数据的协议
 def handle_recv(s):
     params = s.split('||')
@@ -300,6 +414,7 @@ def handle_recv(s):
         'ack_change_nick': ack_change_nick,
         'ack_send_text': ack_send_text,
         'ack_acquire_chatrecord': ack_acquire_chatrecord,
+        'ack_acquire_pyq': ack_acquire_pyq,
     }
     func = switcher.get(params[0], lambda: "nothing")
     return func(params)
@@ -342,9 +457,13 @@ MainWindow = QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
 ui.pushButton_nick.clicked.connect(lambda :change_nick())
-ui.listWidget.itemDoubleClicked.connect(lambda :switch_chat())
+ui.listWidget.itemClicked.connect(lambda :switch_chat())
+ui.listWidget.itemDoubleClicked.connect(lambda :acquire_pyq())
 ui.pushButton_send.clicked.connect(lambda :send_clicked())
 ui.pushButton_record.clicked.connect(lambda :record_clicked())
+ui.pushButton_cool.clicked.connect(lambda :pyq_good())
+ui.pushButton_sendpyq.clicked.connect(lambda :pyq_send())
+ui.pushButton_comment.clicked.connect(lambda :pyq_comment())
 MainWindow.setWindowTitle('欢迎使用QQ乞丐版')
 MainWindow.show()
 
