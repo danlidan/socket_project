@@ -226,6 +226,19 @@
      </rect>
     </property>
    </widget>
+   <widget class="QLabel" name="label_curpyq">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>10</y>
+      <width>331</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>当前朋友圈:</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

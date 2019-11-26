@@ -18,11 +18,13 @@ LOGGED_IN = False   #是否已登录
 ID = ''
 NICK = ''
 CUR_CHAT = ('聊天大厅', '0')
+CUR_PYQ = ('', '')
 FIRST_LOG = True    #是否刚登录
 CHAT_BUFF = {}  #聊天记录的缓存区 id : ((text, time, sender_id, sender_nick),()...),id当前聊天的id，‘0’为聊天大厅
 LAST_SEND_TIME = time.time()
 LAST_RECORD_TIME = time.time()
 LAST_PYQ_SEND_TIME = time.time()
+LAST_GOOD_TIME = time.time()
 ID_LEN = 6
 MAX_PASS_LEN = 15
 MIN_PASS_LEN = 6
@@ -187,8 +189,34 @@ def pyq_addpyq(nick, id, send_time, counter, context, comments):
     ui.listWidget_pyq.insertItem(0, newitem)
 
 def pyq_good():
-    comments = [['liyifei', 'nihao'],['lierfei', 'niyehao']]
-    pyq_addpyq('lidan', '123456', '2019-11-26', 7, '你好', comments)
+    ui.pushButton_cool.setText('赞！')
+    curitem = ui.listWidget_pyq.currentItem()
+    if curitem == None or ui.listWidget_pyq.count() == 0:
+        ui.pushButton_cool.setText('点赞失败')
+        return
+
+    curtime = time.time()
+    global LAST_GOOD_TIME
+    if curtime - LAST_GOOD_TIME < 1:
+        ui.pushButton_cool.setText('点赞过快')
+        return
+    LAST_GOOD_TIME = curtime
+
+    text = curitem.text()
+    params = text.split('\n')
+
+    params_1 = params[1].split(' ')
+    params_user = params[0].split(' ')
+    sender_id = params_user[1]
+    send_time = params_user[2] + ' ' + params_user[3]
+    data = '||'.join(['req_pyq_good', sender_id, send_time])
+    sock.sendall(data.encode('utf-8'))
+
+    #客户端点赞数+1
+    counter = int(params_1[1]) + 1
+    params[1] = "赞: %d"%counter
+    text = '\n'.join(params)
+    curitem.setText(text)
 
 #发送一条朋友圈
 def pyq_send():
@@ -207,7 +235,7 @@ def pyq_send():
         return
     LAST_PYQ_SEND_TIME = cur_time
     cur_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(cur_time))
-    if CUR_CHAT[1] == '0' or CUR_CHAT[1] == ID:
+    if CUR_PYQ[1] == '0' or CUR_PYQ[1] == ID:
         pyq_addpyq(NICK, ID, cur_time_str, 0, text, [])
     data = '||'.join(['req_send_pyq', ID, cur_time_str, text])
     sock.sendall(data.encode('utf-8'))
@@ -255,7 +283,9 @@ def acquire_pyq():
         id = '0'
     else:
         id = params[1]
-
+    global  CUR_PYQ
+    CUR_PYQ = (nick, id)
+    ui.label_curpyq.setText('当前朋友圈：%s(%s)'%(nick, id))
     data = '||'.join(['req_acquire_pyq', id])
     sock.sendall(data.encode('utf-8'))
 
@@ -470,6 +500,7 @@ MainWindow.show()
 #主界面ui初始化的工作
 ui.label_welcome.setText('欢迎！%s（%s）'%(NICK, ID))
 ui.label_curchat.setText('当前聊天：聊天大厅（0）')
+ui.label_curpyq.setText('当前朋友圈：无')
 refresh_list()
 refresh_chat('0')
 

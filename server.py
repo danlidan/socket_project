@@ -19,6 +19,7 @@ def req_handler(params, connection):
         'req_send_pyq': req_send_pyq,
         'req_comment_pyq': req_comment_pyq,
         'req_acquire_pyq': req_acquire_pyq,
+        'req_pyq_good': req_pyq_good,
     }
     try:
         func = switcher.get(params[0], lambda:"nothing")
@@ -297,6 +298,18 @@ def req_acquire_pyq(params, conn):
     data = '||'.join(pyqs)
     retdata = '||'.join(['ack_acquire_pyq', data])
     conn.send(retdata.encode('utf-8'))
+
+#点赞
+def req_pyq_good(params, conn):
+    sender_id = params[1]
+    send_time = params[2]
+    sql = "update pyq_main set cool_counter = cool_counter + 1 where sender_id = '%s' and send_time = '%s';"%(sender_id, send_time)
+    try:
+        cursor.execute(sql)
+    except Exception:
+        print('点赞错误！')
+        return
+    sqlconn.commit()
 
 ##----------------------------------------------------------------------------------------------
 def child_connection(index, sock, connection, address):
