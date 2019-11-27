@@ -56,7 +56,11 @@ def req_login(params, conn):
         conn.send(data.encode('utf-8'))
         return
     sql = "select * from users where id = '%s' and pass = '%s';"%(id, password)
-    cursor.execute(sql)
+    try:
+        cursor.execute(sql)
+    except Exception:
+        print('sql error!')
+        return
     result = cursor.fetchall()
     if(len(result) > 0):
         nick = result[0][2]
@@ -73,7 +77,11 @@ def req_sign(params, conn):
     password = params[2]
     nick = params[3]
     sql = "select * from users where id = '%s';"%id
-    cursor.execute(sql)
+    try:
+        cursor.execute(sql)
+    except Exception:
+        print('sql error!')
+        return
     result = cursor.fetchall()
     if(len(result) > 0):
         data = '||'.join(['ack_sign', 'not'])
@@ -107,7 +115,10 @@ def req_change_nick(params, conn):
     conn_id[conn] = (id, new_nick)
     user_list[id] = new_nick
     sql = "update users set nick_name = '%s' where id = '%s';"%(new_nick, id)
-    cursor.execute(sql)
+    try:
+        cursor.execute(sql)
+    except Exception:
+        print('sql error!')
     sqlconn.commit()
 
     ret_data = '||'.join(['ack_change_nick', new_nick])
@@ -123,7 +134,11 @@ def req_send_text(params, conn):
     #私聊
     if recver_id != '0':
         sql = "insert into chat_records values('%s', '%s', '%s', '%s');"%(sender_id, recver_id, dt, text)
-        cursor.execute(sql)
+        try:
+            cursor.execute(sql)
+        except Exception:
+            print('sql error!')
+            return
         sqlconn.commit()
         if sender_id in id_conn:
             id_conn[sender_id][0].send(retdata.encode('utf-8'))
@@ -131,7 +146,11 @@ def req_send_text(params, conn):
             id_conn[recver_id][0].send(retdata.encode('utf-8'))
     else:   #聊天大厅
         sql = "insert into chat_global values('%s', '%s', '%s');"%(sender_id, dt, text)
-        cursor.execute(sql)
+        try:
+            cursor.execute(sql)
+        except Exception:
+            print('sql error!')
+            return
         sqlconn.commit()
         for conn, values in conn_id.items():
             conn.send(retdata.encode('utf-8'))

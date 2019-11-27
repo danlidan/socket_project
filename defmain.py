@@ -192,6 +192,7 @@ def pyq_addpyq(nick, id, send_time, counter, context, comments):
     newitem.setText(text)
     ui.listWidget_pyq.insertItem(0, newitem)
 
+#朋友圈点赞
 def pyq_good():
     ui.pushButton_cool.setText('赞！')
     curitem = ui.listWidget_pyq.currentItem()
