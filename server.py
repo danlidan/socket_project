@@ -256,6 +256,11 @@ def req_comment_pyq(params, conn):
         print('send pyq comment failed!')
         return
     sqlconn.commit()
+    #如果对方在线通知对方客户端
+    if sender_id in id_conn:
+        conn_sender = id_conn[sender_id][0]
+        if conn_sender != conn:
+            conn_sender.send('ack_pyq_gooded'.encode('utf-8'))
 
 #获取/刷新朋友圈
 def req_acquire_pyq(params, conn):
@@ -310,6 +315,10 @@ def req_pyq_good(params, conn):
         print('点赞错误！')
         return
     sqlconn.commit()
+    if sender_id in id_conn:
+        conn_sender = id_conn[sender_id][0]
+        if conn_sender != conn:
+            conn_sender.send('ack_pyq_gooded'.encode('utf-8'))
 
 ##----------------------------------------------------------------------------------------------
 def child_connection(index, sock, connection, address):

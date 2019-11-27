@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1284</width>
-    <height>620</height>
+    <width>1216</width>
+    <height>621</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -54,7 +54,7 @@
     <property name="geometry">
      <rect>
       <x>630</x>
-      <y>480</y>
+      <y>500</y>
       <width>121</width>
       <height>28</height>
      </rect>
@@ -67,7 +67,7 @@
     <property name="geometry">
      <rect>
       <x>630</x>
-      <y>520</y>
+      <y>540</y>
       <width>121</width>
       <height>28</height>
      </rect>
@@ -153,13 +153,13 @@
      <rect>
       <x>800</x>
       <y>30</y>
-      <width>471</width>
+      <width>401</width>
       <height>441</height>
      </rect>
     </property>
     <property name="maximumSize">
      <size>
-      <width>471</width>
+      <width>99999</width>
       <height>16777215</height>
      </size>
     </property>
@@ -167,7 +167,7 @@
    <widget class="QPushButton" name="pushButton_cool">
     <property name="geometry">
      <rect>
-      <x>1170</x>
+      <x>1100</x>
       <y>480</y>
       <width>93</width>
       <height>28</height>
@@ -177,23 +177,10 @@
      <string>赞！</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_getpyq">
-    <property name="geometry">
-     <rect>
-      <x>630</x>
-      <y>560</y>
-      <width>121</width>
-      <height>28</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>获取动态</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="pushButton_sendpyq">
     <property name="geometry">
      <rect>
-      <x>1170</x>
+      <x>1100</x>
       <y>520</y>
       <width>93</width>
       <height>28</height>
@@ -206,7 +193,7 @@
    <widget class="QPushButton" name="pushButton_comment">
     <property name="geometry">
      <rect>
-      <x>1170</x>
+      <x>1100</x>
       <y>560</y>
       <width>93</width>
       <height>28</height>
@@ -221,7 +208,7 @@
      <rect>
       <x>800</x>
       <y>490</y>
-      <width>361</width>
+      <width>281</width>
       <height>101</height>
      </rect>
     </property>
@@ -245,7 +232,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1284</width>
+     <width>1216</width>
      <height>26</height>
     </rect>
    </property>

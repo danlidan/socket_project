@@ -141,8 +141,12 @@ def set_color(id):
             text = ui.listWidget.item(i).text()
             params = text.split('  ')
             if params[1] == id:
-                ui.listWidget.item(i).setBackground(QColor('pink'))
-                return
+                if id == ID:
+                    ui.listWidget.item(i).setForeground(QColor('green'))
+                else:
+                    ui.listWidget.item(i).setBackground(QColor('pink'))
+                    return
+
 
 
 #请求聊天记录
@@ -180,8 +184,8 @@ def switch_chat():
 def pyq_addpyq(nick, id, send_time, counter, context, comments):
     newitem = QListWidgetItem()
     text = "%s %s %s\n" \
-           "赞: %d\n" \
-           "\t%s\n"%(nick, id, send_time, counter, context)
+           "赞: %d\n\n" \
+           "%s\n\n"%(nick, id, send_time, counter, context)
     if len(comments) > 0 and len(comments[0]) > 1:
         for nick, context in comments:
             text = text + "      %s : %s\n"%(nick, context)
@@ -277,6 +281,7 @@ def pyq_comment():
 #刷新朋友圈
 def acquire_pyq():
     item = ui.listWidget.currentItem()
+    item.setForeground(QColor('black'))
     params = item.text().split('  ')
     nick = params[0]
     if (nick == '聊天大厅'):
@@ -310,7 +315,7 @@ class My_Timer_Thread(QThread):
     def run(self):
         try:
             while True:
-                time.sleep(10)
+                time.sleep(15)
                 self._signal.emit('1')
         except Exception:
             print("Timer error!")
@@ -337,6 +342,9 @@ def ack_sign(params):
         ui_login.label_state.setText('注册失败！该用户名已被注册')
 
 def ack_refresh_list(params):
+    global FIRST_LOG
+    if not FIRST_LOG:
+        prerow = ui.listWidget.currentRow()
     ui.listWidget.clear()
     ui.listWidget.addItem("聊天大厅")
     for s in params[1:]:
@@ -349,10 +357,11 @@ def ack_refresh_list(params):
             ui.listWidget.addItem("%s  %s  在线"%(nick, id))
         else:
             ui.listWidget.addItem("%s  %s  离线"%(nick, id))
-    global FIRST_LOG
     if(FIRST_LOG == True):
         FIRST_LOG = False
         ui.listWidget.setCurrentRow(0)
+    else:
+        ui.listWidget.setCurrentRow(prerow)
 
 def ack_change_nick(params):
     new_nick = params[1]
@@ -434,6 +443,10 @@ def ack_acquire_pyq(params):
             comments.append(s.split('&&'))
         pyq_addpyq(nick, sender_id, send_time, counter, content, comments)
 
+#朋友圈被点赞或者评论后
+def ack_pyq_gooded(params):
+    set_color(ID)
+
 #处理服务器发来数据的协议
 def handle_recv(s):
     params = s.split('||')
@@ -445,6 +458,7 @@ def handle_recv(s):
         'ack_send_text': ack_send_text,
         'ack_acquire_chatrecord': ack_acquire_chatrecord,
         'ack_acquire_pyq': ack_acquire_pyq,
+        'ack_pyq_gooded': ack_pyq_gooded,
     }
     func = switcher.get(params[0], lambda: "nothing")
     return func(params)
